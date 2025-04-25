@@ -15,7 +15,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-generic-websocket.git"
+		"url": "git+https://github.com/bitfocus/companion-module-red-rcp2.git"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^1.0.2"
