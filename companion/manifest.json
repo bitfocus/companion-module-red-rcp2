@@ -6,6 +6,7 @@
 	"version": "1.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-red-rcp2.git",
+	"bugs": "https://github.com/bitfocus/companion-module-red-rcp2/issues",
 	"maintainers": [
 		{
 			"name": "Seth Haberman",
