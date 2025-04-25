@@ -15,10 +15,9 @@
 
 ### Available Return Variables
 
-- $(NAME:fps)	Sensor Frame Rate
-- $(NAME:iso)	ISO	
-- $(NAME:record_format)	Record Format	
-- $(NAME:recording)	Recording State	
-- $(NAME:shutter)	Shutter	
-- $(NAME:white_balance)	White Balance	
-
+- $(NAME:fps) Sensor Frame Rate
+- $(NAME:iso) ISO
+- $(NAME:record_format) Record Format
+- $(NAME:recording) Recording State
+- $(NAME:shutter) Shutter
+- $(NAME:white_balance) White Balance
