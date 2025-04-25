@@ -9,7 +9,7 @@
 	},
 	"license": "MIT",
 	"dependencies": {
-		"@companion-module/base": "~1.2.1",
+		"@companion-module/base": "^1.11.3",
 		"object-path": "^0.11.8",
 		"ws": "^7.5.10"
 	},
@@ -18,7 +18,7 @@
 		"url": "git+https://github.com/bitfocus/companion-module-red-rcp2.git"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^1.0.2"
+		"@companion-module/tools": "^2.3.0"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json"
 }
