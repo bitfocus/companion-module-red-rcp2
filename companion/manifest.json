@@ -3,7 +3,7 @@
 	"name": "RED RCP2 Camera Control",
 	"shortname": "RCP2-Control",
 	"description": "RCP2 Red Camera Control via websocket",
-	"version": "1.0.0",
+	"version": "1.0.4",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-red-rcp2.git",
 	"bugs": "https://github.com/bitfocus/companion-module-red-rcp2/issues",
