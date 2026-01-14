@@ -1,0 +1,24 @@
+{
+	"name": "companion-module-red-rcp2",
+	"version": "1.1.0",
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"format": "prettier -w ."
+	},
+	"license": "MIT",
+	"dependencies": {
+		"@companion-module/base": "~1.2.1",
+		"object-path": "^0.11.8",
+		"ws": "^7.5.10"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/bitfocus/companion-module-red-rcp2.git"
+	},
+	"devDependencies": {
+		"@companion-module/tools": "^1.0.2"
+	},
+	"prettier": "@companion-module/tools/.prettierrc.json"
+}
