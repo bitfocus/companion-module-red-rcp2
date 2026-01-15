@@ -38,12 +38,12 @@ Enter the IP address of your RED camera. The module will automatically connect v
 - **Increase Exposure Adjust** - Increment exposure by specified amount
 - **Decrease Exposure Adjust** - Decrement exposure by specified amount
 
-### Camera Identification (NEW in v1.1.0)
+### Camera Identification (NEW in v1.1.3)
 - **Set Camera ID** - Set the camera's identifier string
 - **Set Reel Number** - Set the current reel number (1-999)
 - **Set Camera Position** - Set camera position letter (A-Z)
 
-### LUT Control (NEW in v1.1.0)
+### LUT Control (NEW in v1.1.3)
 - **Toggle LUT on SDI 1** - Toggle LUT on/off for SDI output 1
 - **Toggle LUT on SDI 2** - Toggle LUT on/off for SDI output 2
 - **Enable LUT on SDI 1** - Turn on LUT for SDI output 1
@@ -51,7 +51,7 @@ Enter the IP address of your RED camera. The module will automatically connect v
 - **Enable LUT on SDI 2** - Turn on LUT for SDI output 2
 - **Disable LUT on SDI 2** - Turn off LUT for SDI output 2
 
-### System Control (NEW in v1.1.0)
+### System Control (NEW in v1.1.3)
 - **Shutdown Camera** - Power off the camera (requires confirmation checkbox)
 
 ### Advanced
@@ -93,7 +93,7 @@ Enter the IP address of your RED camera. The module will automatically connect v
 |----------|-------------|
 | `$(NAME:sdi_freq)` | SDI output frequency |
 
-### Camera Identification (NEW in v1.1.0)
+### Camera Identification (NEW in v1.1.3)
 | Variable | Description |
 |----------|-------------|
 | `$(NAME:camera_id)` | Camera ID string |
@@ -103,7 +103,7 @@ Enter the IP address of your RED camera. The module will automatically connect v
 | `$(NAME:clip_name)` | Next clip name to be recorded |
 | `$(NAME:total_clips)` | Total clips on media |
 
-### Media Information (NEW in v1.1.0)
+### Media Information (NEW in v1.1.3)
 | Variable | Description |
 |----------|-------------|
 | `$(NAME:media_remaining_min)` | Remaining recording time (minutes) |
@@ -112,7 +112,7 @@ Enter the IP address of your RED camera. The module will automatically connect v
 | `$(NAME:media_free_space)` | Free space on media |
 | `$(NAME:media_used_space)` | Used space on media |
 
-### Camera Information (NEW in v1.1.0)
+### Camera Information (NEW in v1.1.3)
 | Variable | Description |
 |----------|-------------|
 | `$(NAME:camera_name)` | Camera name |
@@ -120,7 +120,7 @@ Enter the IP address of your RED camera. The module will automatically connect v
 | `$(NAME:serial_number)` | Camera serial number |
 | `$(NAME:firmware_version)` | Firmware version |
 
-### Timecode (NEW in v1.1.0)
+### Timecode (NEW in v1.1.3)
 | Variable | Description |
 |----------|-------------|
 | `$(NAME:timecode)` | Current timecode |
@@ -147,7 +147,7 @@ The module uses abbreviated parameter IDs (e.g., "ISO" instead of "RCP_PARAM_ISO
 
 ## Changelog
 
-### v1.1.0
+### v1.1.3
 - Added Camera ID, Clip Name, Reel Number readouts
 - Added Media Remaining Time in both minutes and HH:MM:SS formats
 - Added Camera Shutdown action with confirmation
