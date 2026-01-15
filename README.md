@@ -2,7 +2,7 @@
 
 Control RED DSMC3 cameras (V-RAPTOR, V-RAPTOR XL, KOMODO, KOMODO-X) via the RCP2 protocol.
 
-## Version 1.1.0 Changes
+## Version 1.1.2 Changes
 
 This version adds the following requested features:
 - **Camera ID readout** - Display the camera's identifier
