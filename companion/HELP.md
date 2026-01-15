@@ -20,12 +20,12 @@
 - Increase Exposure Adjust
 - Decrease Exposure Adjust
 
-#### Camera Identification (NEW in v1.1.2)
+#### Camera Identification (NEW in v1.1.3)
 - Set Camera ID
 - Set Reel Number
 - Set Camera Position
 
-#### LUT Control (NEW in v1.1.2)
+#### LUT Control (NEW in v1.1.3)
 - Toggle LUT on SDI 1
 - Toggle LUT on SDI 2
 - Enable LUT on SDI 1
@@ -33,7 +33,7 @@
 - Enable LUT on SDI 2
 - Disable LUT on SDI 2
 
-#### System Control (NEW in v1.1.2)
+#### System Control (NEW in v1.1.3)
 - Shutdown Camera
 
 #### Advanced
@@ -67,7 +67,7 @@
 #### Output
 - $(NAME:sdi_freq) SDI Output Frequency
 
-#### Camera Identification (NEW in v1.1.2)
+#### Camera Identification (NEW in v1.1.3)
 - $(NAME:camera_id) Camera ID string
 - $(NAME:camera_pin) Camera PIN
 - $(NAME:camera_position) Camera position letter (A-Z)
@@ -75,19 +75,19 @@
 - $(NAME:clip_name) Next clip name to be recorded
 - $(NAME:total_clips) Total clips on media
 
-#### Media Information (NEW in v1.1.2)
+#### Media Information (NEW in v1.1.3)
 - $(NAME:media_remaining_min) Remaining recording time (minutes)
 - $(NAME:media_remaining_time) Remaining recording time (HH:MM:SS)
 - $(NAME:media_capacity_min) Total media capacity (minutes)
 - $(NAME:media_free_space) Free space on media
 - $(NAME:media_used_space) Used space on media
 
-#### Camera Information (NEW in v1.1.2)
+#### Camera Information (NEW in v1.1.3)
 - $(NAME:camera_name) Camera name
 - $(NAME:camera_type) Camera model type
 - $(NAME:serial_number) Camera serial number
 - $(NAME:firmware_version) Firmware version
 
-#### Timecode (NEW in v1.1.2)
+#### Timecode (NEW in v1.1.3)
 - $(NAME:timecode) Current timecode
 - $(NAME:timecode_display_mode) Timecode display mode
