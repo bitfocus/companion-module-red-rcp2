@@ -19,7 +19,7 @@
 		"url": "git+https://github.com/bitfocus/companion-module-red-rcp2.git"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^1.0.2"
+		"@companion-module/tools": "^1.5.2"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json"
 }
