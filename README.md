@@ -1,180 +1,264 @@
-# RED RCP2 Camera Control for Bitfocus Companion
+# companion-module-red-rcp2
 
-Control RED DSMC3 cameras (V-RAPTOR, V-RAPTOR XL, KOMODO, KOMODO-X) via the RCP2 protocol.
+Control RED DSMC3 cameras (V-RAPTOR, V-RAPTOR XL, KOMODO, KOMODO-X) via the RCP2 WebSocket protocol from Bitfocus Companion.
 
-## Version 1.1.3 Changes
+Based on the RED RCP2 API Protocol documentation. Developed for use with Bitfocus Companion.
 
-This version adds the following requested features:
-- **Camera ID readout** - Display the camera's identifier
-- **Clip Name** - Shows the name of the next clip to be recorded
-- **Reel Number** - Display and set the current reel number  
-- **Camera Position** - Display and set the camera position (A-Z)
-- **Media Remaining Time** - Remaining recording time in minutes and HH:MM:SS format
-- **Camera Shutdown** - Action to remotely power off the camera
-- Additional camera info: Serial number, firmware version, camera type
+---
 
 ## Configuration
 
-Enter the IP address of your RED camera. The module will automatically connect via WebSocket on port 9998.
+Enter the IP address of your RED camera. The module connects automatically via WebSocket on port **9998**. Works with all DSMC3 cameras.
 
-- Works with all DSMC3 cameras: V-RAPTOR, V-RAPTOR XL, KOMODO, KOMODO-X
-- Tested primarily with RED V-RAPTOR 8K S35
+---
 
 ## Available Actions
 
-### Recording Control
-- **Start Recording** - Begin recording
-- **Stop Recording** - Stop recording
-- **Toggle Recording** - Toggle between recording and idle states
+| Action | Description |
+|---|---|
+| Start / Stop / Toggle Recording | Control recording state |
+| Set ISO | Set camera ISO (100–25600) |
+| Set Record Format | Set sensor crop / record format |
+| Set Sensor Frame Rate | Set recording frame rate |
+| Set White Balance | Set color temperature (2000K–10000K) |
+| Set Tint | Set tint value |
+| Set Exposure Adjust (Static) | Set fixed exposure compensation |
+| Increase / Decrease Exposure Adjust | Relative EV steps |
+| Set Aperture | Set iris aperture (T-stop) |
+| Set ND Filter | Set ND filter value |
+| Set Record Mode | Normal, Timelapse, etc. |
+| Set Camera ID | Set camera identifier string |
+| Set Reel Number | Set current reel number |
+| Set Camera Position | Set camera position letter (A–Z) |
+| Toggle / Enable / Disable LUT SDI 1 | Control SDI 1 LUT enable state |
+| Toggle / Enable / Disable LUT SDI 2 | Control SDI 2 LUT enable state |
+| Set External Monitor Tally State | Off / Tally 1 / 2 / 3 |
+| Enable / Disable / Toggle Tally LED | Camera body tally LED (all cameras) |
+| Set Tally 1 / 2 / 3 Color | Set tally colors |
+| Set Tally Opacity | 25% / 50% / 75% / 100% |
+| Set Tally Style | Solid / Dashed / Bracket |
+| Set Tally Thickness | Small / Medium / Large |
+| Camera Shutdown | Remotely power off camera |
+| Send Generic RCP2 Command | Send any raw RCP2 JSON command |
 
-### Camera Settings
-- **Set ISO** - Choose from preset ISO values (200-6400)
-- **Set White Balance** - Set color temperature (2000K-10000K in 100K steps)
-- **Set Sensor Frame Rate** - Set recording frame rate (23.976 to 120 FPS)
-- **Set Record Format** - Choose sensor crop/resolution (2K to 8K, various aspect ratios)
+The Send Generic Command action accepts any valid RCP2 JSON object. Example:
 
-### Exposure
-- **Set Exposure Adjust (Static)** - Set a specific exposure compensation value (-8 to +8)
-- **Increase Exposure Adjust** - Increment exposure by specified amount
-- **Decrease Exposure Adjust** - Decrement exposure by specified amount
+```json
+{"type":"rcp_set","id":"ISO","value":800}
+```
 
-### Camera Identification (NEW in v1.1.3)
-- **Set Camera ID** - Set the camera's identifier string
-- **Set Reel Number** - Set the current reel number (1-999)
-- **Set Camera Position** - Set camera position letter (A-Z)
+---
 
-### LUT Control (NEW in v1.1.3)
-- **Toggle LUT on SDI 1** - Toggle LUT on/off for SDI output 1
-- **Toggle LUT on SDI 2** - Toggle LUT on/off for SDI output 2
-- **Enable LUT on SDI 1** - Turn on LUT for SDI output 1
-- **Disable LUT on SDI 1** - Turn off LUT for SDI output 1
-- **Enable LUT on SDI 2** - Turn on LUT for SDI output 2
-- **Disable LUT on SDI 2** - Turn off LUT for SDI output 2
+## Camera Compatibility
 
-### System Control (NEW in v1.1.3)
-- **Shutdown Camera** - Power off the camera (requires confirmation checkbox)
+The module uses dynamic parameter discovery — on connect it asks the camera what it supports and only subscribes to what it reports back. This means it works correctly across all DSMC3 models and firmware versions automatically.
 
-### Advanced
-- **Send Generic Command** - Send raw RCP2 JSON commands
+**96 of the parameters in this module are supported on all cameras** (KOMODO, KOMODO-X, V-RAPTOR, V-RAPTOR XL).
+
+The following are exceptions based on the RCP2 support matrix:
+
+### V-RAPTOR / V-RAPTOR XL only
+
+| Parameter | Reason |
+|---|---|
+| SDI 2 LUT, SDI 2 LUT enabled, SDI 2 format rect, SDI 2 monitor frequency | V-RAPTOR has dual SDI outputs; KOMODO and KOMODO-X have one |
+| `TEMPERATURE_AUX` | Additional temperature sensor not present on KOMODO/KOMODO-X |
+| Broadcast color space and EOTF (SDI 1/2) | Broadcast monitoring controls exclusive to V-RAPTOR |
+
+### Not confirmed in support matrix
+
+The following parameters are used in the module but do not appear in the RCP2 support matrix. They may work on all cameras — unverified:
+
+- `EXTERNAL_TALLY_THICKNESS` — tally border thickness
+- `CAMERA_POSITION` — camera position letter (A–Z)
+- `CLIP_COUNT` — total clips on media
+- `REEL_NUMBER` — current reel number
+- `MONITOR_FREQUENCY_SDI_2` — SDI 2 monitor frequency
+
+### No KOMODO-X exclusive parameters
+
+There are no parameters in this module that are exclusive to KOMODO-X. Everything supported on KOMODO-X is either also on KOMODO, or is V-RAPTOR only.
+
+---
 
 ## Available Variables
 
+### Connection State
+| Variable | Description |
+|---|---|
+| `$(NAME:connected)` | Connection state ("Connected", "Connecting", or "Disconnected") |
+
 ### Image Settings
 | Variable | Description |
-|----------|-------------|
-| `$(NAME:iso)` | Current ISO value |
+|---|---|
+| `$(NAME:iso)` | ISO |
 | `$(NAME:white_balance)` | White Balance (Kelvin) |
-| `$(NAME:tint)` | Tint value |
-| `$(NAME:shutter)` | Shutter speed/angle |
-| `$(NAME:aperture)` | Iris aperture (T-stop) |
-| `$(NAME:exposure_adjust)` | Exposure compensation value |
+| `$(NAME:tint)` | Tint |
+| `$(NAME:shutter)` | Shutter speed / angle |
+| `$(NAME:aperture)` | Iris Aperture (T-stop) |
+| `$(NAME:exposure_adjust)` | Exposure compensation |
+| `$(NAME:nd)` | ND Filter |
+| `$(NAME:fps)` | Sensor Frame Rate |
 
 ### Recording
 | Variable | Description |
-|----------|-------------|
+|---|---|
 | `$(NAME:recording)` | Recording state ("Recording" or "Idle") |
-| `$(NAME:record_duration)` | Current clip duration (HH:MM:SS) |
-| `$(NAME:record_format)` | Current format (e.g., "8K 16:9") |
-| `$(NAME:record_codec)` | Recording codec ("R3D" or "ProRes") |
-| `$(NAME:fps)` | Sensor frame rate |
+| `$(NAME:record_duration)` | Clip duration (HH:MM:SS) |
+| `$(NAME:record_format)` | Record format string |
+| `$(NAME:record_codec)` | Codec ("R3D" or "ProRes") |
+| `$(NAME:record_mode)` | Record mode |
 
-### LUT Information
+### LUT
 | Variable | Description |
-|----------|-------------|
-| `$(NAME:lut_project)` | Current Project/Camera LUT |
+|---|---|
+| `$(NAME:lut_project)` | Project / Camera LUT |
 | `$(NAME:lut_sdi1)` | LUT on SDI 1 output |
 | `$(NAME:lut_sdi2)` | LUT on SDI 2 output |
-| `$(NAME:lut_top_lcd)` | Top LCD display LUT |
-| `$(NAME:lut_sdi1_enabled)` | SDI 1 LUT enabled (On/Off) |
-| `$(NAME:lut_sdi2_enabled)` | SDI 2 LUT enabled (On/Off) |
+| `$(NAME:lut_top_lcd)` | Top LCD LUT |
+| `$(NAME:lut_sdi1_enabled)` | SDI 1 LUT on/off |
+| `$(NAME:lut_sdi2_enabled)` | SDI 2 LUT on/off |
 
 ### Output
 | Variable | Description |
-|----------|-------------|
+|---|---|
 | `$(NAME:sdi_freq)` | SDI output frequency |
 
-### Camera Identification (NEW in v1.1.3)
+### Camera Identification
 | Variable | Description |
-|----------|-------------|
+|---|---|
 | `$(NAME:camera_id)` | Camera ID string |
 | `$(NAME:camera_pin)` | Camera PIN |
-| `$(NAME:camera_position)` | Camera position letter (A-Z) |
+| `$(NAME:camera_position)` | Camera position letter (A–Z) |
+| `$(NAME:camera_name)` | Camera name |
+| `$(NAME:camera_type)` | Camera model type |
+| `$(NAME:serial_number)` | Serial number |
+| `$(NAME:firmware_version)` | Firmware version |
+| `$(NAME:camera_runtime)` | Camera runtime (hours) |
 | `$(NAME:reel_number)` | Current reel number |
-| `$(NAME:clip_name)` | Next clip name to be recorded |
+| `$(NAME:clip_name)` | Next clip name |
 | `$(NAME:total_clips)` | Total clips on media |
 
-### Media Information (NEW in v1.1.3)
+### Media
 | Variable | Description |
-|----------|-------------|
+|---|---|
 | `$(NAME:media_remaining_min)` | Remaining recording time (minutes) |
 | `$(NAME:media_remaining_time)` | Remaining recording time (HH:MM:SS) |
 | `$(NAME:media_capacity_min)` | Total media capacity (minutes) |
 | `$(NAME:media_free_space)` | Free space on media |
 | `$(NAME:media_used_space)` | Used space on media |
 
-### Camera Information (NEW in v1.1.3)
+### Power / Battery
 | Variable | Description |
-|----------|-------------|
-| `$(NAME:camera_name)` | Camera name |
-| `$(NAME:camera_type)` | Camera model type |
-| `$(NAME:serial_number)` | Camera serial number |
-| `$(NAME:firmware_version)` | Firmware version |
+|---|---|
+| `$(NAME:power_voltage)` | Input voltage |
+| `$(NAME:power_current)` | Input current |
+| `$(NAME:power_percent)` | Battery percentage |
+| `$(NAME:power_runtime)` | Estimated battery runtime |
+| `$(NAME:power_state)` | Power state |
+| `$(NAME:power_present)` | Power present |
+| `$(NAME:power_valid)` | Power valid |
+| `$(NAME:power_type)` | Power input type |
 
-### Timecode (NEW in v1.1.3)
+### Timecode
 | Variable | Description |
-|----------|-------------|
+|---|---|
 | `$(NAME:timecode)` | Current timecode |
 | `$(NAME:timecode_display_mode)` | Timecode display mode |
 
-## Technical Notes
+### Tally (External USB-C Monitor — all cameras)
+| Variable | Description |
+|---|---|
+| `$(NAME:tally_state)` | External monitor tally state |
+| `$(NAME:tally_1_color)` | Tally 1 color |
+| `$(NAME:tally_2_color)` | Tally 2 color |
+| `$(NAME:tally_3_color)` | Tally 3 color |
+| `$(NAME:tally_opacity)` | Tally opacity |
+| `$(NAME:tally_style)` | Tally style |
+| `$(NAME:tally_thickness)` | Tally Thickness (Small/Medium/Large) |
+| `$(NAME:tally_led_enable)` | Camera body tally LED (all cameras) |
 
-### RCP2 Protocol
-This module communicates with RED cameras via the RCP2 (RED Command Protocol 2) JSON/WebSocket API on port 9998. The protocol is documented in RED's official API documentation.
+### CDL Color Grading
+| Variable | Description |
+|---|---|
+| `$(NAME:cdl_slope_r/g/b)` | CDL Slope per channel |
+| `$(NAME:cdl_offset_r/g/b)` | CDL Offset per channel |
+| `$(NAME:cdl_power_r/g/b)` | CDL Power per channel |
+| `$(NAME:cdl_saturation)` | CDL Saturation |
 
-### Parameter ID Reference
-The module uses abbreviated parameter IDs (e.g., "ISO" instead of "RCP_PARAM_ISO"). Both forms are accepted by the camera.
+### Color
+| Variable | Description |
+|---|---|
+| `$(NAME:color_space)` | Color space |
+| `$(NAME:roll_off)` | Roll off |
 
-### Value Scaling
-- **ISO**: Raw integer values (e.g., 800)
-- **Color Temperature**: Kelvin as integer (e.g., 5600)
-- **Exposure Adjust**: Fixed-point with 1000x multiplier (internal), displayed as float (-8.000 to +8.000)
-- **Frame Rate**: Integer in milliframes (e.g., 24000 = 24.000 fps, 23976 = 23.976 fps)
+### Display Tools
+| Variable | Description |
+|---|---|
+| `$(NAME:log_view)` | Log View enabled |
+| `$(NAME:false_color)` | False Color enabled |
+| `$(NAME:peaking)` | Peaking enabled |
 
-### Known Limitations
-- Some parameter names may vary between camera models
-- Not all parameters are available on all cameras
-- The camera must be powered on and network-accessible
+### Calibration
+| Variable | Description |
+|---|---|
+| `$(NAME:cal_status_temp)` | Calibration status temperature |
+| `$(NAME:cal_current_temp)` | Current calibration temperature |
+
+### Autofocus
+| Variable | Description |
+|---|---|
+| `$(NAME:af_state)` | Autofocus state |
+
+> Additional variables are registered automatically based on what parameters your specific camera supports. They appear in Companion's variable picker after the first connection.
+
+---
 
 ## Changelog
 
-### v1.1.3
-- Added Camera ID, Clip Name, Reel Number readouts
-- Added Media Remaining Time in both minutes and HH:MM:SS formats
-- Added Camera Shutdown action with confirmation
-- Added actions to set Camera ID, Reel Number, and Camera Position
-- Added Camera Info variables (serial, firmware, type)
-- Added Timecode variables
-- Added LUT toggle actions for SDI 1 and SDI 2 outputs
-- Added LUT enable/disable actions for SDI 1 and SDI 2
-- Added LUT enabled state variables (On/Off)
-- Expanded ISO range (200-6400)
-- Expanded white balance range (2000K-10000K)
-- Added Toggle Recording action
-- Improved frame rate options (23.976 to 120 FPS)
-- Added all record format options with descriptive labels
+### v1.4.6
 
-### v1.0.0
-- Initial release with basic camera control
-- ISO, White Balance, Shutter, Aperture, Frame Rate variables
-- Recording start/stop
-- LUT information
-- Exposure adjustment controls
+**Connection state variable**
+`$(NAME:connected)` — reflects the WebSocket state in real time: `Connecting` when initiating, `Connected` on open, `Disconnected` on close. Driven directly by WebSocket events with zero polling overhead. Use this on buttons to show camera online/offline status at a glance.
 
-## License
+**Dynamic parameter discovery**
+The module calls `rcp_get_parameters` on connect to get the full supported parameter list from the camera. Each parameter is automatically categorized as Subscribe, Poll-Only, or Skip, handling camera-to-camera differences without a hardcoded list.
 
-MIT License
+**Expanded subscriptions (36 → 75+ parameters)**
+New subscribed categories: CDL color grading (10 params), power/battery monitoring (10 params), calibration temperatures, autofocus state, GPS metadata, livestream rect, frame guide color, project frame rate, camera preset list, pre-record frames/start, record mode, timelapse interval, R3D quality, display tools (log view, false color, peaking, magnify), exposure angle/integration time, color space, roll off, media percentage/time remaining, timecode (now subscribed automatically — previously required a manual generic command), timecode state/source/auto-jam/display-mode.
 
-## Credits
+**V-RAPTOR auto-detection**
+V-RAPTOR-specific parameters (`APPLIED_CAMERA_LUT_SDI_2`, `RECORD_FORMAT_RECT_SDI_2`) are only subscribed when a V-RAPTOR or V-RAPTOR XL is detected.
 
-Based on the RED RCP2 API Protocol documentation.
-Developed for use with Bitfocus Companion.
+**CPU optimizations**
+- Proxy-based variable batching: writes to `this.variables` are intercepted, change-checked, and flushed in a single `setVariableValues()` call per event loop tick via `setImmediate`
+- Implicit subscription fix: `rcp_get` silently creates a push subscription on the camera — poll-only params now immediately cancel it with `rcp_subscribe on_off:false`
+- Staggered connect burst: ~900 poll-only params fetched in batches of 5 every 500ms (~90 seconds), preventing the CPU spike on connect
+- Staggered heartbeat: 30-second heartbeat sends 3 params every 500ms (~5.5 seconds spread)
+- `setVariableDefinitions` caching: only called when new dynamic variables are discovered
+- `process.title = 'RED RCP2'`: process shows as `RED RCP2` in task managers instead of `node`
+
+**Bug fixes**
+- Fixed `SENSOR_FRAME_RATE` showing wrong values for drop-frame rates — now uses the camera's own display string instead of converting the raw milliHz integer
+- Fixed `rcp_cur_parameters` response being silently dropped in the WebSocket message router
+- Removed phantom media parameters that don't exist in the RCP2 database (`MEDIA_FREE`, `MEDIA_USED`, `MEDIA_MINUTES_REMAINING`) — replaced with confirmed equivalents (`MEDIA_PERCENTAGE_REMAINING`, `MEDIA_TIME_REMAINING`, `MEDIA_CLIP_COUNT`)
+
+**Heartbeat polling (33 params, 30-second interval)**
+Parameters that change continuously (battery voltage, board temperatures, media remaining, etc.) are intentionally not subscribed — push subscriptions on these would flood the connection with constant updates. Instead they are sampled every 30 seconds: battery/power readings, board temperatures (7 sensors), media remaining, WiFi/wired/USB-C network status, USB-C media name/status, sync source/state, calibration temperatures, camera runtime.
+
+---
+
+## Protocol Reference
+
+Communicates via RCP2 (RED Command Protocol 2) JSON/WebSocket on port **9998**.
+
+| RCP2 Message | Purpose |
+|---|---|
+| `rcp_config` | Session initialization |
+| `rcp_get_parameters` | Retrieve full supported parameter list |
+| `rcp_subscribe` | Register for push updates on a parameter |
+| `rcp_get` | Request current value (also implicitly subscribes) |
+| `rcp_set` | Set a parameter value |
+| `rcp_session` | Keep-alive echo (must be echoed back or camera disconnects) |
+
+Maximum 8 simultaneous WebSocket connections per camera. 1 per application is recommended.
