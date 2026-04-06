@@ -6,7 +6,23 @@ Type in the IP address of the RED camera. Works with all DSMC3 cameras (V-RAPTOR
 
 ---
 
-### v1.4.6 — What's New
+### v1.4.8 — What's New
+
+Maintenance release addressing Bitfocus code review feedback. No new features — all changes are internal.
+
+**Upgrade script:** Existing buttons using the old action IDs (`start_record`, `stop_record`, `toggle_record`) are automatically migrated to the current names (`start_recording`, `stop_recording`, `toggle_recording`) when the module loads. No manual button updates needed.
+
+**Bug fixes:**
+- WebSocket errors now correctly update the connection status indicator
+- Stagger timers are now properly cleaned up when the module is destroyed or the connection drops
+- `Set ISO` and `Set Sensor Frame Rate` actions now correctly ignore invalid input instead of sending garbage values to the camera
+- LUT subscribe parameter IDs corrected (`ENABLE_CAMERA_LUT_SDI_1/2`) — LUT state variables were not populating on some firmware versions
+
+**Code structure:** Module split into `src/` files (`actions.js`, `feedbacks.js`, `variables.js`, `upgrades.js`) per Bitfocus module standards.
+
+---
+
+### v1.4.6
 
 This release expands parameter coverage, improves reliability, and significantly reduces CPU usage.
 
