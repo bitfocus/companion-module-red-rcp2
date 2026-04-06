@@ -1,9 +1,10 @@
 import { InstanceBase, runEntrypoint, InstanceStatus } from '@companion-module/base'
 import WebSocket from 'ws'
-import objectPath from 'object-path'
-import { upgradeScripts } from './upgrade.js'
+import { upgradeScripts } from './upgrades.js'
+import { getVariableDefinitions } from './variables.js'
+import { getFeedbackDefinitions } from './feedbacks.js'
+import { getActionDefinitions } from './actions.js'
 
-process.title = 'RED RCP2'
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -16,30 +17,6 @@ const recordFormatMappingAll = {
 }
 
 const recordCodecMapping = { 0: 'R3D', 1: 'ProRes' }
-
-const ISO_CHOICES = [
-	{ id: '100', label: '100' },     { id: '125', label: '125' },
-	{ id: '160', label: '160' },     { id: '200', label: '200' },
-	{ id: '250', label: '250' },     { id: '320', label: '320' },
-	{ id: '400', label: '400' },     { id: '500', label: '500' },
-	{ id: '640', label: '640' },     { id: '800', label: '800' },
-	{ id: '1000', label: '1000' },   { id: '1280', label: '1280' },
-	{ id: '1600', label: '1600' },   { id: '2000', label: '2000' },
-	{ id: '2560', label: '2560' },   { id: '3200', label: '3200' },
-	{ id: '4000', label: '4000' },   { id: '5120', label: '5120' },
-	{ id: '6400', label: '6400' },   { id: '8000', label: '8000' },
-	{ id: '10240', label: '10240' }, { id: '12800', label: '12800' },
-	{ id: '16000', label: '16000' }, { id: '20480', label: '20480' },
-	{ id: '25600', label: '25600' },
-]
-
-const TALLY_COLOR_CHOICES = [
-	{ id: '0',        label: 'Black' },   { id: '12517376', label: 'Red' },
-	{ id: '191',      label: 'Blue' },    { id: '48896',    label: 'Green' },
-	{ id: '16776960', label: 'Yellow' },  { id: '12517567', label: 'Magenta' },
-	{ id: '49087',    label: 'Cyan' },    { id: '12566463', label: 'Gray' },
-	{ id: '4210752',  label: 'Dark Gray' },{ id: '16777215', label: 'White' },
-]
 
 // Camera type numbers from rcp_cur_cam_info (camera_type.num)
 // 50=KOMODO, 51=V-RAPTOR, 52=V-RAPTOR XL, 53=KOMODO-X
@@ -156,6 +133,7 @@ class RedRCP2Instance extends InstanceBase {
 		if (this.caminfo_timer)   { clearInterval(this.caminfo_timer);   this.caminfo_timer   = null }
 		if (this.heartbeat_timer) { clearInterval(this.heartbeat_timer); this.heartbeat_timer = null }
 		if (this.reconnect_timer) { clearTimeout(this.reconnect_timer);  this.reconnect_timer = null }
+		if (this._staggerTimers)  { for (const t of this._staggerTimers) clearTimeout(t); this._staggerTimers.clear() }
 	}
 
 	// ── Config ────────────────────────────────────────────────────────────────
@@ -178,6 +156,7 @@ class RedRCP2Instance extends InstanceBase {
 		this.lutSdi2Enabled = false
 		this.cameraTypeNum  = 0  // 50=KOMODO, 51=V-RAPTOR, 52=V-RAPTOR XL, 53=KOMODO-X
 		this.pollOnlyParams = null  // non-subscribed params to poll at heartbeat
+		this._staggerTimers = new Set()
 		this.config = config
 		this.ws = null
 		this.resync_timer = null; this.caminfo_timer = null
@@ -338,7 +317,10 @@ class RedRCP2Instance extends InstanceBase {
 				}
 			})
 
-			this.ws.on('error', (err) => { this.log('error', 'WebSocket error: ' + err.toString()) })
+			this.ws.on('error', (err) => {
+				this.log('error', 'WebSocket error: ' + err.toString())
+				this.updateStatus(InstanceStatus.ConnectionFailure, err.toString())
+			})
 
 			this.ws.on('close', () => {
 				this.updateStatus(InstanceStatus.Disconnected)
@@ -434,7 +416,8 @@ class RedRCP2Instance extends InstanceBase {
 			}
 			hbOffset += 3
 			if (hbOffset < hbIds.length) {
-				setTimeout(sendHbBatch, 500)
+				const t = setTimeout(sendHbBatch, 500)
+				this._staggerTimers.add(t)
 			}
 		}
 		sendHbBatch()
@@ -469,7 +452,7 @@ class RedRCP2Instance extends InstanceBase {
 			'APPLIED_CAMERA_LUT_SDI_1', 'APPLIED_CAMERA_LUT_SDI_2', 'AUDIO_HEADPHONE_MUTE', 'AUDIO_HEADPHONE_SOURCE',
 			'AUDIO_SOURCE', 'BROADCAST_COLOR_SPACE', 'BROADCAST_COLOR_SPACE_SDI_1', 'BROADCAST_COLOR_SPACE_SDI_2',
 			'BROADCAST_EOTF', 'BROADCAST_EOTF_SDI_1', 'BROADCAST_EOTF_SDI_2', 'CAMERA_LUT_ENABLE',
-			'CAMERA_LUT_ENABLE_BUILT_IN_LCD', 'CAMERA_LUT_ENABLE_DSI_1', 'CAMERA_LUT_ENABLE_SDI_1', 'CAMERA_LUT_ENABLE_SDI_2',
+			'CAMERA_LUT_ENABLE_BUILT_IN_LCD', 'CAMERA_LUT_ENABLE_DSI_1', 'ENABLE_CAMERA_LUT_SDI_1', 'ENABLE_CAMERA_LUT_SDI_2',
 			'CDL', 'CLIP_DURATION', 'CLIP_NAME', 'COLOR_SPACE',
 			'COLOR_TEMPERATURE', 'EXPOSURE_ADJUST', 'EXPOSURE_DISPLAY', 'EXPOSURE_INTEGRATION_TIME',
 			'EXTERNAL_TALLY_1_COLOR', 'EXTERNAL_TALLY_2_COLOR', 'EXTERNAL_TALLY_3_COLOR', 'EXTERNAL_TALLY_OPACITY',
@@ -526,7 +509,8 @@ class RedRCP2Instance extends InstanceBase {
 			}
 			offset += BATCH
 			if (offset < pollIds.length) {
-				setTimeout(sendBatch, BATCH_INTERVAL_MS)
+				const t = setTimeout(sendBatch, BATCH_INTERVAL_MS)
+				this._staggerTimers.add(t)
 			}
 		}
 		sendBatch()
@@ -568,108 +552,7 @@ class RedRCP2Instance extends InstanceBase {
 	// ── Variables ─────────────────────────────────────────────────────────────
 
 	initVariables() {
-		this._staticVarDefs = [
-			// Connection state
-			{ variableId: 'connected',             name: 'Connection State' },
-			// Exposure
-			{ variableId: 'iso',                  name: 'ISO' },
-			{ variableId: 'white_balance',         name: 'White Balance' },
-			{ variableId: 'fps',                  name: 'Sensor Frame Rate' },
-			{ variableId: 'shutter',               name: 'Shutter' },
-			{ variableId: 'aperture',              name: 'Iris Aperture' },
-			{ variableId: 'exposure_adjust',       name: 'Exposure Adjust' },
-			{ variableId: 'nd',                   name: 'ND Filter' },
-			// Recording
-			{ variableId: 'recording',             name: 'Recording State' },
-			{ variableId: 'record_format',         name: 'Record Format' },
-			{ variableId: 'record_codec',          name: 'Recording Codec' },
-			{ variableId: 'record_duration',       name: 'Recording Duration' },
-			{ variableId: 'record_mode',           name: 'Record Mode' },
-			// Color
-			{ variableId: 'tint',                 name: 'Tint' },
-			{ variableId: 'color_space',           name: 'Color Space' },
-			{ variableId: 'roll_off',             name: 'Roll Off' },
-			// CDL
-			{ variableId: 'cdl_slope_r',           name: 'CDL Slope Red' },
-			{ variableId: 'cdl_slope_g',           name: 'CDL Slope Green' },
-			{ variableId: 'cdl_slope_b',           name: 'CDL Slope Blue' },
-			{ variableId: 'cdl_offset_r',          name: 'CDL Offset Red' },
-			{ variableId: 'cdl_offset_g',          name: 'CDL Offset Green' },
-			{ variableId: 'cdl_offset_b',          name: 'CDL Offset Blue' },
-			{ variableId: 'cdl_power_r',           name: 'CDL Power Red' },
-			{ variableId: 'cdl_power_g',           name: 'CDL Power Green' },
-			{ variableId: 'cdl_power_b',           name: 'CDL Power Blue' },
-			{ variableId: 'cdl_saturation',        name: 'CDL Saturation' },
-			// Output
-			{ variableId: 'sdi_freq',             name: 'SDI Output Frequency' },
-			// LUT
-			{ variableId: 'lut_project',           name: 'Current Project/Camera LUT' },
-			{ variableId: 'lut_top_lcd',           name: 'Top LCD LUT' },
-			{ variableId: 'lut_sdi1',             name: 'Current LUT on SDI 1 Output' },
-			{ variableId: 'lut_sdi2',             name: 'Current LUT on SDI 2 Output' },
-			{ variableId: 'lut_sdi1_enabled',      name: 'SDI 1 LUT Enabled (On/Off)' },
-			{ variableId: 'lut_sdi2_enabled',      name: 'SDI 2 LUT Enabled (On/Off)' },
-			// Camera identity
-			{ variableId: 'camera_id',            name: 'Camera ID' },
-			{ variableId: 'camera_pin',            name: 'Camera PIN' },
-			{ variableId: 'camera_position',       name: 'Camera Position (A-Z)' },
-			{ variableId: 'camera_name',           name: 'Camera Name' },
-			{ variableId: 'camera_type',           name: 'Camera Type' },
-			{ variableId: 'firmware_version',      name: 'Firmware Version' },
-			{ variableId: 'serial_number',         name: 'Serial Number' },
-			{ variableId: 'camera_runtime',        name: 'Camera Runtime (hours)' },
-			// Clip/media
-			{ variableId: 'clip_name',             name: 'Next Clip Name' },
-			{ variableId: 'reel_number',           name: 'Reel Number' },
-			{ variableId: 'total_clips',           name: 'Total Clips on Media' },
-			{ variableId: 'media_remaining_min',   name: 'Media Remaining (Minutes)' },
-			{ variableId: 'media_remaining_time',  name: 'Media Remaining (HH:MM:SS)' },
-			{ variableId: 'media_capacity_min',    name: 'Media Total Capacity (Minutes)' },
-			{ variableId: 'media_free_space',      name: 'Media Free Space' },
-			{ variableId: 'media_used_space',      name: 'Media Used Space' },
-			// Power (ACTIVE_POWER_IN — all cameras)
-			{ variableId: 'power_voltage',         name: 'Power Input Voltage' },
-			{ variableId: 'power_current',         name: 'Power Input Current' },
-			{ variableId: 'power_percent',         name: 'Power Battery Percent' },
-			{ variableId: 'power_runtime',         name: 'Power Battery Runtime' },
-			{ variableId: 'power_state',           name: 'Power State' },
-			{ variableId: 'power_present',         name: 'Power Present' },
-			{ variableId: 'power_valid',           name: 'Power Valid' },
-			// Autofocus
-			{ variableId: 'af_state',             name: 'Autofocus State' },
-			// Tally — USB-C external monitor (all cameras)
-			{ variableId: 'tally_state',           name: 'External Monitor Tally State (USB-C Display)' },
-			{ variableId: 'tally_1_color',         name: 'External Monitor Tally 1 Color' },
-			{ variableId: 'tally_2_color',         name: 'External Monitor Tally 2 Color' },
-			{ variableId: 'tally_3_color',         name: 'External Monitor Tally 3 Color' },
-			{ variableId: 'tally_opacity',         name: 'External Monitor Tally Opacity' },
-			{ variableId: 'tally_style',           name: 'External Monitor Tally Style' },
-			{ variableId: 'tally_thickness',       name: 'External Monitor Tally Thickness' },
-			// Tally LED — all cameras
-			{ variableId: 'tally_led_enable',      name: 'Camera Body Tally LED Enable' },
-			// Timecode
-			{ variableId: 'timecode',              name: 'Current Timecode' },
-			{ variableId: 'timecode_display_mode', name: 'Timecode Display Mode' },
-			// Recording extras
-			{ variableId: 'exposure_integration_time', name: 'Exposure Integration Time' },
-			{ variableId: 'timelapse_interval',        name: 'Timelapse Interval' },
-			{ variableId: 'pre_record_start',          name: 'Pre-Record Start on Record' },
-			{ variableId: 'record_format_rect_sdi1',   name: 'Record Format Rect SDI 1' },
-			{ variableId: 'record_format_rect_sdi2',   name: 'Record Format Rect SDI 2' },
-			{ variableId: 'format_arg_camera_id',      name: 'Format Arg Camera ID' },
-			// Calibration
-			{ variableId: 'cal_status_temp',           name: 'Calibration Status Temperature' },
-			{ variableId: 'cal_current_temp',          name: 'Current Calibration Temperature' },
-			// Display tools extras
-			{ variableId: 'magnify_dsi1',              name: 'Magnify Enable DSI 1' },
-			{ variableId: 'sdi2_freq',                 name: 'SDI 2 Output Frequency' },
-			{ variableId: 'frame_guide_color',         name: 'Frame Guide 1 Color' },
-			{ variableId: 'power_type',                name: 'Power Input Type' },
-			// Display tools
-			{ variableId: 'log_view',             name: 'Log View Enabled' },
-			{ variableId: 'false_color',           name: 'False Color Enabled' },
-			{ variableId: 'peaking',               name: 'Peaking Enabled' },
-		]
+		this._staticVarDefs = getVariableDefinitions()
 		this._dynamicVarDefs = []   // reset dynamic additions on each init
 		this.setVariableDefinitions(this._staticVarDefs)
 	}
@@ -1219,309 +1102,13 @@ class RedRCP2Instance extends InstanceBase {
 	// ── Feedbacks ─────────────────────────────────────────────────────────────
 
 	initFeedbacks() {
-		this.setFeedbackDefinitions({
-			recording_state: {
-				type: 'boolean',
-				name: 'Recording State',
-				description: 'Change style when camera is recording',
-				defaultStyle: { color: 0xffffff, bgcolor: 0xff0000 },
-				options: [],
-				callback: () => this.variables.recording === 'Recording',
-			},
-			tally_state_active: {
-				type: 'boolean',
-				name: 'Tally State Active',
-				description: 'Change style when external monitor tally is active',
-				defaultStyle: { color: 0xffffff, bgcolor: 0xff0000 },
-				options: [{
-					type: 'dropdown', label: 'Tally State', id: 'state', default: '1',
-					choices: [{ id: '1', label: 'Tally 1' }, { id: '2', label: 'Tally 2' }, { id: '3', label: 'Tally 3' }],
-				}],
-				callback: (feedback) => {
-					const states = { '1': 'Tally 1', '2': 'Tally 2', '3': 'Tally 3' }
-					return this.variables.tally_state === states[feedback.options.state]
-				},
-			},
-		})
+		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
 	}
 
 	// ── Actions ───────────────────────────────────────────────────────────────
 
 	initActions() {
-		this.setActionDefinitions({
-
-			// Recording — set_record_state enum values from rcp_cur_types:
-			// STOP=0, START=1, TOGGLE=2, PRE_RECORD_STOP=3
-			start_recording: {
-				name: 'Start Recording',
-				options: [],
-				callback: () => this.send({ type: 'rcp_set', id: 'RECORD_STATE', value: 1 }),
-			},
-			stop_recording: {
-				name: 'Stop Recording',
-				options: [],
-				callback: () => this.send({ type: 'rcp_set', id: 'RECORD_STATE', value: 0 }),
-			},
-			toggle_recording: {
-				name: 'Toggle Recording',
-				options: [],
-				callback: () => this.send({ type: 'rcp_set', id: 'RECORD_STATE', value: 2 }),
-			},
-
-			// Exposure Adjust
-			increase_exposure_adjust: {
-				name: 'Increase Exposure Adjust',
-				options: [{
-					type: 'dropdown', label: 'Step Size', id: 'step', default: '1000',
-					choices: [
-						{ id: '33',   label: '1/30 stop (0.033)' },
-						{ id: '100',  label: '1/10 stop (0.100)' },
-						{ id: '500',  label: '1/2 stop (0.500)' },
-						{ id: '1000', label: '1 stop (1.000)' },
-					],
-				}],
-				callback: async (action, context) => {
-					const step = parseInt(await context.parseVariablesInString(action.options.step), 10)
-					if (isNaN(step)) return
-					const newVal = Math.min(8000, (this.currentExposureAdjust || 0) + step)
-					this.send({ type: 'rcp_set', id: 'EXPOSURE_ADJUST', value: newVal })
-				},
-			},
-			decrease_exposure_adjust: {
-				name: 'Decrease Exposure Adjust',
-				options: [{
-					type: 'dropdown', label: 'Step Size', id: 'step', default: '1000',
-					choices: [
-						{ id: '33',   label: '1/30 stop (0.033)' },
-						{ id: '100',  label: '1/10 stop (0.100)' },
-						{ id: '500',  label: '1/2 stop (0.500)' },
-						{ id: '1000', label: '1 stop (1.000)' },
-					],
-				}],
-				callback: async (action, context) => {
-					const step = parseInt(await context.parseVariablesInString(action.options.step), 10)
-					if (isNaN(step)) return
-					const newVal = Math.max(-8000, (this.currentExposureAdjust || 0) - step)
-					this.send({ type: 'rcp_set', id: 'EXPOSURE_ADJUST', value: newVal })
-				},
-			},
-			set_exposure_adjust: {
-				name: 'Set Exposure Adjust (Static)',
-				options: [{ type: 'number', label: 'Target Value', id: 'value', default: 0.0, min: -8.0, max: 8.0, step: 0.001 }],
-				callback: async (action, context) => {
-					const v = parseFloat(await context.parseVariablesInString(action.options.value))
-					if (!isNaN(v)) this.send({ type: 'rcp_set', id: 'EXPOSURE_ADJUST', value: Math.round(Math.min(8, Math.max(-8, v)) * 1000) })
-				},
-			},
-
-			// White Balance
-			set_white_balance: {
-				name: 'Set White Balance',
-				options: [{
-					type: 'dropdown', label: 'White Balance (Kelvin)', id: 'white_balance', default: '5600',
-					choices: Array.from({ length: (10000 - 2000) / 100 + 1 }, (_, i) => {
-						const k = 2000 + i * 100
-						return { id: k.toString(), label: k + 'K' }
-					}),
-				}],
-				callback: async (action, context) => {
-					const value = parseInt(await context.parseVariablesInString(action.options.white_balance), 10)
-					if (!isNaN(value)) this.send({ type: 'rcp_set', id: 'COLOR_TEMPERATURE', value })
-				},
-			},
-
-			// ISO
-			set_iso: {
-				name: 'Set ISO',
-				options: [{ type: 'dropdown', label: 'ISO', id: 'iso', default: '800', choices: ISO_CHOICES }],
-				callback: async (action, context) => {
-					const iso = parseInt(await context.parseVariablesInString(action.options.iso), 10)
-					this.send({ type: 'rcp_set', id: 'ISO', value: iso })
-				},
-			},
-
-			// Sensor FPS
-			set_sensor_fps: {
-				name: 'Set Sensor Frame Rate',
-				options: [{
-					type: 'dropdown', label: 'Sensor Frame Rate', id: 'fps', default: '24000',
-					choices: [
-						{ id: '23976',  label: '23.976 FPS' }, { id: '24000',  label: '24 FPS' },
-						{ id: '25000',  label: '25 FPS' },     { id: '29970',  label: '29.97 FPS' },
-						{ id: '30000',  label: '30 FPS' },     { id: '48000',  label: '48 FPS' },
-						{ id: '50000',  label: '50 FPS' },     { id: '59940',  label: '59.94 FPS' },
-						{ id: '60000',  label: '60 FPS' },     { id: '120000', label: '120 FPS' },
-					],
-				}],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'SENSOR_FRAME_RATE', value: parseInt(await context.parseVariablesInString(action.options.fps), 10) })
-				},
-			},
-
-			// Record Format
-			set_record_format: {
-				name: 'Set Record Format',
-				options: [{
-					type: 'dropdown', label: 'Record Format', id: 'record_format', default: '6',
-					choices: [
-						{ id: '6',  label: '8K 16:9 (Full Frame)' }, { id: '7',  label: '8K 16:9 (HD)' },
-						{ id: '8',  label: '8K 21:9' },               { id: '9',  label: '8K 2.39:1' },
-						{ id: '10', label: '7K 16:9 (Full Frame)' },  { id: '11', label: '7K 16:9 (HD)' },
-						{ id: '12', label: '7K 21:9' },               { id: '13', label: '7K 2.39:1' },
-						{ id: '0',  label: '6K 16:9 (Full Frame)' },  { id: '3',  label: '6K 16:9 (HD)' },
-						{ id: '5',  label: '6K 2.39:1' },             { id: '14', label: '6K 21:9' },
-						{ id: '1',  label: '5K 16:9' },               { id: '2',  label: '4K 16:9' },
-						{ id: '4',  label: '2K 16:9' },
-					],
-				}],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'RECORD_FORMAT', value: parseInt(await context.parseVariablesInString(action.options.record_format), 10) })
-				},
-			},
-
-			// Camera identity
-			set_camera_id: {
-				name: 'Set Camera ID',
-				options: [{ type: 'textinput', label: 'Camera ID (max 63 chars)', id: 'camera_id', default: '', useVariables: true }],
-				callback: async (action, context) => {
-					const id = await context.parseVariablesInString(action.options.camera_id)
-					if (id) this.send({ type: 'rcp_set', id: 'CAMERA_ID', value: id })
-				},
-			},
-			set_reel_number: {
-				name: 'Set Reel Number',
-				options: [{ type: 'number', label: 'Reel Number (1-999)', id: 'reel', default: 1, min: 1, max: 999 }],
-				callback: async (action, context) => {
-					const reel = parseInt(await context.parseVariablesInString(action.options.reel), 10)
-					if (!isNaN(reel) && reel >= 1 && reel <= 999) this.send({ type: 'rcp_set', id: 'REEL_NUMBER', value: reel })
-				},
-			},
-			set_camera_position: {
-				name: 'Set Camera Position',
-				options: [{
-					type: 'dropdown', label: 'Camera Position (Letter)', id: 'position', default: '0',
-					choices: Array.from({ length: 26 }, (_, i) => ({ id: i.toString(), label: String.fromCharCode(65 + i) })),
-				}],
-				callback: async (action, context) => {
-					const pos = parseInt(await context.parseVariablesInString(action.options.position), 10)
-					if (!isNaN(pos) && pos >= 0 && pos <= 25) this.send({ type: 'rcp_set', id: 'CAMERA_POSITION', value: pos })
-				},
-			},
-
-			// LUT
-			toggle_lut_sdi1:  { name: 'Toggle LUT on SDI 1',  options: [], callback: () => this.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_1', value: this.lutSdi1Enabled ? 0 : 1 }) },
-			toggle_lut_sdi2:  { name: 'Toggle LUT on SDI 2',  options: [], callback: () => this.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: this.lutSdi2Enabled ? 0 : 1 }) },
-			enable_lut_sdi1:  { name: 'Enable LUT on SDI 1',  options: [], callback: () => this.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_1', value: 1 }) },
-			disable_lut_sdi1: { name: 'Disable LUT on SDI 1', options: [], callback: () => this.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_1', value: 0 }) },
-			enable_lut_sdi2:  { name: 'Enable LUT on SDI 2',  options: [], callback: () => this.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 1 }) },
-			disable_lut_sdi2: { name: 'Disable LUT on SDI 2', options: [], callback: () => this.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 0 }) },
-
-			// Tally — USB-C external monitor (all cameras)
-			set_tally_state: {
-				name: 'Set External Monitor Tally State',
-				options: [{
-					type: 'dropdown', label: 'Tally State (USB-C Monitor)', id: 'state', default: '0',
-					choices: [
-						{ id: '0', label: 'Off' },     { id: '1', label: 'Tally 1' },
-						{ id: '2', label: 'Tally 2' }, { id: '3', label: 'Tally 3' },
-					],
-				}],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_STATE', value: parseInt(await context.parseVariablesInString(action.options.state), 10) })
-				},
-			},
-			set_tally_1_color: {
-				name: 'Set External Monitor Tally 1 Color',
-				options: [{ type: 'dropdown', label: 'Color', id: 'color', default: '12517376', choices: TALLY_COLOR_CHOICES }],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_1_COLOR', value: parseInt(await context.parseVariablesInString(action.options.color), 10) })
-				},
-			},
-			set_tally_2_color: {
-				name: 'Set External Monitor Tally 2 Color',
-				options: [{ type: 'dropdown', label: 'Color', id: 'color', default: '48896', choices: TALLY_COLOR_CHOICES }],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_2_COLOR', value: parseInt(await context.parseVariablesInString(action.options.color), 10) })
-				},
-			},
-			set_tally_3_color: {
-				name: 'Set External Monitor Tally 3 Color',
-				options: [{ type: 'dropdown', label: 'Color', id: 'color', default: '16776960', choices: TALLY_COLOR_CHOICES }],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_3_COLOR', value: parseInt(await context.parseVariablesInString(action.options.color), 10) })
-				},
-			},
-			set_tally_opacity: {
-				name: 'Set External Monitor Tally Opacity',
-				options: [{
-					type: 'dropdown', label: 'Opacity', id: 'opacity', default: '3',
-					choices: [{ id: '0', label: '25%' }, { id: '1', label: '50%' }, { id: '2', label: '75%' }, { id: '3', label: '100%' }],
-				}],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_OPACITY', value: parseInt(await context.parseVariablesInString(action.options.opacity), 10) })
-				},
-			},
-			set_tally_style: {
-				name: 'Set External Monitor Tally Style',
-				options: [{
-					type: 'dropdown', label: 'Style', id: 'style', default: '0',
-					choices: [{ id: '0', label: 'Solid' }, { id: '1', label: 'Dashed' }, { id: '2', label: 'Bracket' }],
-				}],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_STYLE', value: parseInt(await context.parseVariablesInString(action.options.style), 10) })
-				},
-			},
-			set_tally_thickness: {
-				name: 'Set External Monitor Tally Thickness',
-				options: [{
-					type: 'dropdown', label: 'Thickness', id: 'thickness', default: '1',
-					choices: [{ id: '0', label: 'Small' }, { id: '1', label: 'Medium' }, { id: '2', label: 'Large' }],
-				}],
-				callback: async (action, context) => {
-					this.send({ type: 'rcp_set', id: 'EXTERNAL_TALLY_THICKNESS', value: parseInt(await context.parseVariablesInString(action.options.thickness), 10) })
-				},
-			},
-
-			// Tally LED — all cameras
-			enable_tally_led: {
-				name: 'Enable Camera Body Tally LED',
-				options: [],
-				callback: () => this.send({ type: 'rcp_set', id: 'TALLY_LED_ENABLE', value: 1 }),
-			},
-			disable_tally_led: {
-				name: 'Disable Camera Body Tally LED',
-				options: [],
-				callback: () => this.send({ type: 'rcp_set', id: 'TALLY_LED_ENABLE', value: 0 }),
-			},
-			toggle_tally_led: {
-				name: 'Toggle Camera Body Tally LED',
-				options: [],
-				callback: () => this.send({ type: 'rcp_set', id: 'TALLY_LED_ENABLE', value: this.variables.tally_led_enable === 'Enabled' ? 0 : 1 }),
-			},
-
-			// System
-			shutdown_camera: {
-				name: 'Shutdown Camera',
-				options: [{ type: 'checkbox', label: 'Confirm Shutdown (must be checked to proceed)', id: 'confirm', default: false }],
-				callback: async (action) => {
-					if (action.options.confirm) {
-						this.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 })
-						this.log('info', 'Shutdown command sent to camera')
-					} else {
-						this.log('warn', 'Shutdown not confirmed — checkbox must be enabled')
-					}
-				},
-			},
-			send_command: {
-				name: 'Send Generic Command',
-				options: [{ type: 'textinput', label: 'Raw JSON Data', id: 'data', default: '{ "type": "rcp_set", "id": "ISO", "val": 800 }', useVariables: true }],
-				callback: async (action, context) => {
-					const msg = await context.parseVariablesInString(action.options.data)
-					if (this.ws && this.ws.readyState === WebSocket.OPEN) this.ws.send(msg)
-					else this.log('error', 'WebSocket not open')
-				},
-			},
-		})
+		this.setActionDefinitions(getActionDefinitions(this))
 	}
 }
 

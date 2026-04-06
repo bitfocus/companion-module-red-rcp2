@@ -13,3 +13,9 @@ yarn-error.log*
 # Environment files
 .env
 .env.local
+
+# Build output
+/pkg
+/*.tgz
+DEBUG-*
+/.yarn
