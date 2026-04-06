@@ -216,6 +216,22 @@ There are no parameters in this module that are exclusive to KOMODO-X. Everythin
 
 ## Changelog
 
+### v1.4.8
+
+Maintenance release addressing Bitfocus code review feedback.
+
+**Upgrade script:** Existing buttons using old action IDs (`start_record`, `stop_record`, `toggle_record`) are automatically migrated to the current names on load.
+
+**Bug fixes:**
+- WebSocket errors now correctly report `ConnectionFailure` status
+- Stagger timers properly cleaned up on destroy/disconnect
+- `Set ISO` and `Set Sensor Frame Rate` now ignore invalid (NaN) input
+- LUT subscribe parameter IDs corrected — `lut_sdi1_enabled` / `lut_sdi2_enabled` variables now populate correctly
+
+**Code structure:** Split into `src/` modules per Bitfocus standards (`actions.js`, `feedbacks.js`, `variables.js`, `upgrades.js`).
+
+---
+
 ### v1.4.6
 
 **Connection state variable**
