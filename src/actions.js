@@ -279,6 +279,28 @@ export function getActionDefinitions(self) {
 			callback: () => self.send({ type: 'rcp_set', id: 'TALLY_LED_ENABLE', value: self.variables.tally_led_enable === 'Enabled' ? 0 : 1 }),
 		},
 
+		// Magnify
+		set_magnify: {
+			name: 'Set Magnify',
+			options: [
+				{
+					type: 'dropdown', label: 'State', id: 'state', default: '1',
+					choices: [{ id: '1', label: 'Enable' }, { id: '0', label: 'Disable' }],
+				},
+				{ type: 'checkbox', label: 'LCD',   id: 'lcd',   default: false },
+				{ type: 'checkbox', label: 'DSI 1', id: 'dsi1',  default: false },
+				{ type: 'checkbox', label: 'SDI 1', id: 'sdi1',  default: false },
+				{ type: 'checkbox', label: 'SDI 2', id: 'sdi2',  default: false },
+			],
+			callback: async (action, context) => {
+				const value = parseInt(await context.parseVariablesInString(action.options.state), 10)
+				if (action.options.lcd)  self.send({ type: 'rcp_set', id: 'MAGNIFY_ENABLE_BUILT_IN_LCD', value })
+				if (action.options.dsi1) self.send({ type: 'rcp_set', id: 'MAGNIFY_ENABLE_DSI_1',        value })
+				if (action.options.sdi1) self.send({ type: 'rcp_set', id: 'MAGNIFY_ENABLE_SDI_1',        value })
+				if (action.options.sdi2) self.send({ type: 'rcp_set', id: 'MAGNIFY_ENABLE_SDI_2',        value })
+			},
+		},
+
 		// System
 		shutdown_camera: {
 			name: 'Shutdown Camera',
