@@ -285,7 +285,7 @@ export function getActionDefinitions(self) {
 			options: [{ type: 'checkbox', label: 'Confirm Shutdown (must be checked to proceed)', id: 'confirm', default: false }],
 			callback: async (action) => {
 				if (action.options.confirm) {
-					self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 })
+					self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 2 })
 					self.log('info', 'Shutdown command sent to camera')
 				} else {
 					self.log('warn', 'Shutdown not confirmed — checkbox must be enabled')
