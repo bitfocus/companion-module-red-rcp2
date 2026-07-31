@@ -139,19 +139,27 @@ export function getActionDefinitions(self) {
 		},
 
 		// Record Format
+		// Value-to-label mapping verified against the camera's own RCP_PARAM_RECORD_FORMAT
+		// dropdown (web UI HTML) — see issue #24. The _FF protocol symbols are RED's native
+		// 17:9 sensor crop, NOT 16:9: e.g. FORMAT_4K_FF (2) is 4096×2160 DCI, while
+		// 4K 16:9 UHD (3840×2160) is FORMAT_4K_HD (18).
 		set_record_format: {
 			name: 'Set Record Format',
 			options: [{
 				type: 'dropdown', label: 'Record Format', id: 'record_format', default: '6',
 				choices: [
-					{ id: '6',  label: '8K 16:9 (Full Frame)' }, { id: '7',  label: '8K 16:9 (HD)' },
-					{ id: '8',  label: '8K 21:9' },               { id: '9',  label: '8K 2.39:1' },
-					{ id: '10', label: '7K 16:9 (Full Frame)' },  { id: '11', label: '7K 16:9 (HD)' },
-					{ id: '12', label: '7K 21:9' },               { id: '13', label: '7K 2.39:1' },
-					{ id: '0',  label: '6K 16:9 (Full Frame)' },  { id: '3',  label: '6K 16:9 (HD)' },
-					{ id: '5',  label: '6K 2.39:1' },             { id: '14', label: '6K 21:9' },
-					{ id: '1',  label: '5K 16:9' },               { id: '2',  label: '4K 16:9' },
-					{ id: '4',  label: '2K 16:9' },
+					{ id: '6',  label: '8K 17:9' },       { id: '7',  label: '8K 16:9' },
+					{ id: '8',  label: '8K 2:1' },        { id: '9',  label: '8K 2.4:1' },
+					{ id: '10', label: '7K 17:9' },       { id: '11', label: '7K 16:9' },
+					{ id: '12', label: '7K 2:1' },        { id: '13', label: '7K 2.4:1' },
+					{ id: '0',  label: '6K 17:9' },       { id: '14', label: '6K 2:1' },
+					{ id: '5',  label: '6K 2.4:1' },      { id: '3',  label: '6K 16:9' },
+					{ id: '55', label: '6K 4:3 2x' },     { id: '56', label: '6K 6:5 2x' },
+					{ id: '57', label: '6K 3:2 1.8x' },   { id: '58', label: '6K 4:3 1.8x' },
+					{ id: '59', label: '6K 3:2 1.6x' },   { id: '42', label: '6K 16:9 1.5x' },
+					{ id: '43', label: '6K 17:9 1.3x' },  { id: '45', label: '6K 17:9 1.25x' },
+					{ id: '1',  label: '5K 17:9' },       { id: '2',  label: '4K 17:9' },
+					{ id: '18', label: '4K 16:9' },       { id: '4',  label: '2K 17:9' },
 				],
 			}],
 			callback: async (action, context) => {

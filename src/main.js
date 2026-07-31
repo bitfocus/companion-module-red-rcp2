@@ -9,11 +9,16 @@ import { getActionDefinitions } from './actions.js'
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Verified against the camera's own RCP_PARAM_RECORD_FORMAT dropdown (see issue #24):
+// _FF protocol symbols are RED's native 17:9 crop, not 16:9; 4K 16:9 UHD is value 18.
 const recordFormatMappingAll = {
-	0: '6K 16:9',    1: '5K 16:9',    2: '4K 16:9',    3: '6K 16:9',
-	4: '2K 16:9',    5: '6K 2.39:1',  6: '8K 16:9',    7: '8K 16:9',
-	8: '8K 21:9',    9: '8K 2.39:1',  10: '7K 16:9',   11: '7K 16:9',
-	12: '7K 21:9',   13: '7K 2.39:1', 14: '6K 21:9',
+	0: '6K 17:9',    1: '5K 17:9',    2: '4K 17:9',    3: '6K 16:9',
+	4: '2K 17:9',    5: '6K 2.4:1',   6: '8K 17:9',    7: '8K 16:9',
+	8: '8K 2:1',     9: '8K 2.4:1',   10: '7K 17:9',   11: '7K 16:9',
+	12: '7K 2:1',    13: '7K 2.4:1',  14: '6K 2:1',    18: '4K 16:9',
+	42: '6K 16:9 1.5x',  43: '6K 17:9 1.3x',  45: '6K 17:9 1.25x',
+	55: '6K 4:3 2x',     56: '6K 6:5 2x',     57: '6K 3:2 1.8x',
+	58: '6K 4:3 1.8x',   59: '6K 3:2 1.6x',
 }
 
 const recordCodecMapping = { 0: 'R3D', 1: 'ProRes' }
