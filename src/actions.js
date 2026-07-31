@@ -16,6 +16,16 @@ const ISO_CHOICES = [
 	{ id: '25600', label: '25600' },
 ]
 
+// Magnify is a per-output enable in RCP2 (MAGNIFY_ENABLE_<OUTPUT>). Which outputs
+// exist depends on the camera — unsupported outputs simply ignore the set and their
+// status variables stay blank.
+export const MAGNIFY_OUTPUT_CHOICES = [
+	{ id: 'MAGNIFY_ENABLE_SDI_1',        label: 'SDI 1' },
+	{ id: 'MAGNIFY_ENABLE_SDI_2',        label: 'SDI 2' },
+	{ id: 'MAGNIFY_ENABLE_DSI_1',        label: 'Top LCD (DSI 1)' },
+	{ id: 'MAGNIFY_ENABLE_BUILT_IN_LCD', label: 'Built-in LCD' },
+]
+
 const TALLY_COLOR_CHOICES = [
 	{ id: '0',        label: 'Black' },   { id: '12517376', label: 'Red' },
 	{ id: '191',      label: 'Blue' },    { id: '48896',    label: 'Green' },
@@ -203,6 +213,32 @@ export function getActionDefinitions(self) {
 		disable_lut_sdi1: { name: 'Disable LUT on SDI 1', options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_1', value: 0 }) },
 		enable_lut_sdi2:  { name: 'Enable LUT on SDI 2',  options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 1 }) },
 		disable_lut_sdi2: { name: 'Disable LUT on SDI 2', options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 0 }) },
+
+		// Magnify — per-output punch-in (issue #16)
+		set_magnify: {
+			name: 'Set Magnify',
+			options: [
+				{
+					type: 'dropdown', label: 'Output', id: 'output', default: 'MAGNIFY_ENABLE_SDI_1',
+					choices: MAGNIFY_OUTPUT_CHOICES,
+				},
+				{
+					type: 'dropdown', label: 'State', id: 'state', default: 'toggle',
+					choices: [
+						{ id: 'toggle', label: 'Toggle' },
+						{ id: 'enable', label: 'Enable' },
+						{ id: 'disable', label: 'Disable' },
+					],
+				},
+			],
+			callback: (action) => {
+				const output = action.options.output
+				let value
+				if (action.options.state === 'toggle') value = self.magnifyState[output] ? 0 : 1
+				else value = action.options.state === 'enable' ? 1 : 0
+				self.send({ type: 'rcp_set', id: output, value })
+			},
+		},
 
 		// Tally — USB-C external monitor (all cameras)
 		set_tally_state: {

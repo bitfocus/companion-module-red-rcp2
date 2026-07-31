@@ -1,3 +1,5 @@
+import { MAGNIFY_OUTPUT_CHOICES } from './actions.js'
+
 export function getFeedbackDefinitions(self) {
 	return {
 		recording_state: {
@@ -7,6 +9,17 @@ export function getFeedbackDefinitions(self) {
 			defaultStyle: { color: 0xffffff, bgcolor: 0xff0000 },
 			options: [],
 			callback: () => self.variables.recording === 'Recording',
+		},
+		magnify_active: {
+			type: 'boolean',
+			name: 'Magnify Active',
+			description: 'Change style when magnify is enabled on the selected output',
+			defaultStyle: { color: 0x000000, bgcolor: 0xffaa00 },
+			options: [{
+				type: 'dropdown', label: 'Output', id: 'output', default: 'MAGNIFY_ENABLE_SDI_1',
+				choices: MAGNIFY_OUTPUT_CHOICES,
+			}],
+			callback: (feedback) => !!self.magnifyState[feedback.options.output],
 		},
 		tally_state_active: {
 			type: 'boolean',
