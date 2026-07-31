@@ -32,6 +32,7 @@ Enter the IP address of your RED camera. The module connects automatically via W
 | Set Camera Position | Set camera position letter (A–Z) |
 | Toggle / Enable / Disable LUT SDI 1 | Control SDI 1 LUT enable state |
 | Toggle / Enable / Disable LUT SDI 2 | Control SDI 2 LUT enable state |
+| Set Magnify | Enable / Disable / Toggle magnify per output (SDI 1, SDI 2, Top LCD, Built-in LCD) |
 | Set External Monitor Tally State | Off / Tally 1 / 2 / 3 |
 | Enable / Disable / Toggle Tally LED | Camera body tally LED (all cameras) |
 | Set Tally 1 / 2 / 3 Color | Set tally colors |
@@ -198,6 +199,10 @@ There are no parameters in this module that are exclusive to KOMODO-X. Everythin
 | `$(NAME:log_view)` | Log View enabled |
 | `$(NAME:false_color)` | False Color enabled |
 | `$(NAME:peaking)` | Peaking enabled |
+| `$(NAME:magnify_sdi1)` | Magnify enabled on SDI 1 (On/Off) |
+| `$(NAME:magnify_sdi2)` | Magnify enabled on SDI 2 (On/Off) |
+| `$(NAME:magnify_dsi1)` | Magnify enabled on Top LCD / DSI 1 (On/Off) |
+| `$(NAME:magnify_lcd)` | Magnify enabled on Built-in LCD (On/Off) |
 
 ### Calibration
 | Variable | Description |
@@ -215,6 +220,12 @@ There are no parameters in this module that are exclusive to KOMODO-X. Everythin
 ---
 
 ## Changelog
+
+### v1.5.0
+
+**Record Format labels corrected (#24):** The `_FF` RCP2 format symbols are RED's native 17:9 sensor crop, not 16:9 — selecting "4K 16:9" was actually setting 4K 17:9 (4096×2160 DCI). All dropdown labels now match the camera's own `RCP_PARAM_RECORD_FORMAT` menu, true 4K 16:9 UHD (value 18) was added, and the 6K anamorphic modes are now selectable. `$(NAME:record_format)` reports corrected names as well. Existing buttons keep sending the same values — behavior is unchanged, labels are now accurate.
+
+**Magnify control (#16):** New `Set Magnify` action (Enable / Disable / Toggle per output), `Magnify Active` boolean feedback, and live per-output status variables, driven by the `MAGNIFY_ENABLE_*` parameter family via dynamic discovery.
 
 ### v1.4.8
 
