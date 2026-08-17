@@ -214,12 +214,13 @@ export function getActionDefinitions(self) {
 		enable_lut_sdi2:  { name: 'Enable LUT on SDI 2',  options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 1 }) },
 		disable_lut_sdi2: { name: 'Disable LUT on SDI 2', options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 0 }) },
 
-		// Magnify — per-output punch-in (issue #16)
+		// Magnify — per-output punch-in (issue #16). Multi-select so one button can
+		// punch in on several outputs at once (design from PR #20).
 		set_magnify: {
 			name: 'Set Magnify',
 			options: [
 				{
-					type: 'dropdown', label: 'Output', id: 'output', default: 'MAGNIFY_ENABLE_SDI_1',
+					type: 'multidropdown', label: 'Outputs', id: 'outputs', default: ['MAGNIFY_ENABLE_SDI_1'],
 					choices: MAGNIFY_OUTPUT_CHOICES,
 				},
 				{
@@ -232,11 +233,12 @@ export function getActionDefinitions(self) {
 				},
 			],
 			callback: (action) => {
-				const output = action.options.output
-				let value
-				if (action.options.state === 'toggle') value = self.magnifyState[output] ? 0 : 1
-				else value = action.options.state === 'enable' ? 1 : 0
-				self.send({ type: 'rcp_set', id: output, value })
+				for (const output of action.options.outputs ?? []) {
+					let value
+					if (action.options.state === 'toggle') value = self.magnifyState[output] ? 0 : 1
+					else value = action.options.state === 'enable' ? 1 : 0
+					self.send({ type: 'rcp_set', id: output, value })
+				}
 			},
 		},
 
@@ -338,8 +340,15 @@ export function getActionDefinitions(self) {
 		},
 		restart_camera: {
 			name: 'Restart Camera',
-			options: [],
-			callback: () => self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 }),
+			options: [{ type: 'checkbox', label: 'Confirm Restart (must be checked to proceed)', id: 'confirm', default: false }],
+			callback: async (action) => {
+				if (action.options.confirm) {
+					self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 })
+					self.log('info', 'Restart command sent to camera')
+				} else {
+					self.log('warn', 'Restart not confirmed — checkbox must be enabled')
+				}
+			},
 		},
 		send_command: {
 			name: 'Send Generic Command',

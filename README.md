@@ -32,14 +32,15 @@ Enter the IP address of your RED camera. The module connects automatically via W
 | Set Camera Position | Set camera position letter (A–Z) |
 | Toggle / Enable / Disable LUT SDI 1 | Control SDI 1 LUT enable state |
 | Toggle / Enable / Disable LUT SDI 2 | Control SDI 2 LUT enable state |
-| Set Magnify | Enable / Disable / Toggle magnify per output (SDI 1, SDI 2, Top LCD, Built-in LCD) |
+| Set Magnify | Enable / Disable / Toggle magnify on one or more outputs (SDI 1, SDI 2, Top LCD, Built-in LCD) |
 | Set External Monitor Tally State | Off / Tally 1 / 2 / 3 |
 | Enable / Disable / Toggle Tally LED | Camera body tally LED (all cameras) |
 | Set Tally 1 / 2 / 3 Color | Set tally colors |
 | Set Tally Opacity | 25% / 50% / 75% / 100% |
 | Set Tally Style | Solid / Dashed / Bracket |
 | Set Tally Thickness | Small / Medium / Large |
-| Camera Shutdown | Remotely power off camera |
+| Camera Shutdown | Remotely power off camera (true shutdown; confirmation required) |
+| Restart Camera | Remotely restart camera (confirmation required) |
 | Send Generic RCP2 Command | Send any raw RCP2 JSON command |
 
 The Send Generic Command action accepts any valid RCP2 JSON object. Example:
@@ -225,7 +226,9 @@ There are no parameters in this module that are exclusive to KOMODO-X. Everythin
 
 **Record Format labels corrected (#24):** The `_FF` RCP2 format symbols are RED's native 17:9 sensor crop, not 16:9 — selecting "4K 16:9" was actually setting 4K 17:9 (4096×2160 DCI). All dropdown labels now match the camera's own `RCP_PARAM_RECORD_FORMAT` menu, true 4K 16:9 UHD (value 18) was added, and the 6K anamorphic modes are now selectable. `$(NAME:record_format)` reports corrected names as well. Existing buttons keep sending the same values — behavior is unchanged, labels are now accurate.
 
-**Magnify control (#16):** New `Set Magnify` action (Enable / Disable / Toggle per output), `Magnify Active` boolean feedback, and live per-output status variables, driven by the `MAGNIFY_ENABLE_*` parameter family via dynamic discovery.
+**Magnify control (#16):** New `Set Magnify` action (Enable / Disable / Toggle on one or more outputs — multi-select design from @ChristopherJohnson2's #20), `Magnify Active` boolean feedback, and live per-output status variables, driven by the `MAGNIFY_ENABLE_*` parameter family via dynamic discovery.
+
+**Shutdown fixed, Restart added (#18/#19, @ChristopherJohnson2):** `Shutdown Camera` now sends `SHUTDOWN` value 2 (true power-off) — value 1, which it previously sent, restarts the camera per RED's RCP2 documentation. The old behavior is available as the new `Restart Camera` action; both are gated behind a confirmation checkbox.
 
 ### v1.4.8
 
