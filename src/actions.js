@@ -16,6 +16,16 @@ const ISO_CHOICES = [
 	{ id: '25600', label: '25600' },
 ]
 
+// Magnify is a per-output enable in RCP2 (MAGNIFY_ENABLE_<OUTPUT>). Which outputs
+// exist depends on the camera — unsupported outputs simply ignore the set and their
+// status variables stay blank.
+export const MAGNIFY_OUTPUT_CHOICES = [
+	{ id: 'MAGNIFY_ENABLE_SDI_1',        label: 'SDI 1' },
+	{ id: 'MAGNIFY_ENABLE_SDI_2',        label: 'SDI 2' },
+	{ id: 'MAGNIFY_ENABLE_DSI_1',        label: 'Top LCD (DSI 1)' },
+	{ id: 'MAGNIFY_ENABLE_BUILT_IN_LCD', label: 'Built-in LCD' },
+]
+
 const TALLY_COLOR_CHOICES = [
 	{ id: '0',        label: 'Black' },   { id: '12517376', label: 'Red' },
 	{ id: '191',      label: 'Blue' },    { id: '48896',    label: 'Green' },
@@ -139,19 +149,27 @@ export function getActionDefinitions(self) {
 		},
 
 		// Record Format
+		// Value-to-label mapping verified against the camera's own RCP_PARAM_RECORD_FORMAT
+		// dropdown (web UI HTML) — see issue #24. The _FF protocol symbols are RED's native
+		// 17:9 sensor crop, NOT 16:9: e.g. FORMAT_4K_FF (2) is 4096×2160 DCI, while
+		// 4K 16:9 UHD (3840×2160) is FORMAT_4K_HD (18).
 		set_record_format: {
 			name: 'Set Record Format',
 			options: [{
 				type: 'dropdown', label: 'Record Format', id: 'record_format', default: '6',
 				choices: [
-					{ id: '6',  label: '8K 16:9 (Full Frame)' }, { id: '7',  label: '8K 16:9 (HD)' },
-					{ id: '8',  label: '8K 21:9' },               { id: '9',  label: '8K 2.39:1' },
-					{ id: '10', label: '7K 16:9 (Full Frame)' },  { id: '11', label: '7K 16:9 (HD)' },
-					{ id: '12', label: '7K 21:9' },               { id: '13', label: '7K 2.39:1' },
-					{ id: '0',  label: '6K 16:9 (Full Frame)' },  { id: '3',  label: '6K 16:9 (HD)' },
-					{ id: '5',  label: '6K 2.39:1' },             { id: '14', label: '6K 21:9' },
-					{ id: '1',  label: '5K 16:9' },               { id: '2',  label: '4K 16:9' },
-					{ id: '4',  label: '2K 16:9' },
+					{ id: '6',  label: '8K 17:9' },       { id: '7',  label: '8K 16:9' },
+					{ id: '8',  label: '8K 2:1' },        { id: '9',  label: '8K 2.4:1' },
+					{ id: '10', label: '7K 17:9' },       { id: '11', label: '7K 16:9' },
+					{ id: '12', label: '7K 2:1' },        { id: '13', label: '7K 2.4:1' },
+					{ id: '0',  label: '6K 17:9' },       { id: '14', label: '6K 2:1' },
+					{ id: '5',  label: '6K 2.4:1' },      { id: '3',  label: '6K 16:9' },
+					{ id: '55', label: '6K 4:3 2x' },     { id: '56', label: '6K 6:5 2x' },
+					{ id: '57', label: '6K 3:2 1.8x' },   { id: '58', label: '6K 4:3 1.8x' },
+					{ id: '59', label: '6K 3:2 1.6x' },   { id: '42', label: '6K 16:9 1.5x' },
+					{ id: '43', label: '6K 17:9 1.3x' },  { id: '45', label: '6K 17:9 1.25x' },
+					{ id: '1',  label: '5K 17:9' },       { id: '2',  label: '4K 17:9' },
+					{ id: '18', label: '4K 16:9' },       { id: '4',  label: '2K 17:9' },
 				],
 			}],
 			callback: async (action, context) => {
@@ -195,6 +213,34 @@ export function getActionDefinitions(self) {
 		disable_lut_sdi1: { name: 'Disable LUT on SDI 1', options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_1', value: 0 }) },
 		enable_lut_sdi2:  { name: 'Enable LUT on SDI 2',  options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 1 }) },
 		disable_lut_sdi2: { name: 'Disable LUT on SDI 2', options: [], callback: () => self.send({ type: 'rcp_set', id: 'ENABLE_CAMERA_LUT_SDI_2', value: 0 }) },
+
+		// Magnify — per-output punch-in (issue #16). Multi-select so one button can
+		// punch in on several outputs at once (design from PR #20).
+		set_magnify: {
+			name: 'Set Magnify',
+			options: [
+				{
+					type: 'multidropdown', label: 'Outputs', id: 'outputs', default: ['MAGNIFY_ENABLE_SDI_1'],
+					choices: MAGNIFY_OUTPUT_CHOICES,
+				},
+				{
+					type: 'dropdown', label: 'State', id: 'state', default: 'toggle',
+					choices: [
+						{ id: 'toggle', label: 'Toggle' },
+						{ id: 'enable', label: 'Enable' },
+						{ id: 'disable', label: 'Disable' },
+					],
+				},
+			],
+			callback: (action) => {
+				for (const output of action.options.outputs ?? []) {
+					let value
+					if (action.options.state === 'toggle') value = self.magnifyState[output] ? 0 : 1
+					else value = action.options.state === 'enable' ? 1 : 0
+					self.send({ type: 'rcp_set', id: output, value })
+				}
+			},
+		},
 
 		// Tally — USB-C external monitor (all cameras)
 		set_tally_state: {
@@ -294,8 +340,15 @@ export function getActionDefinitions(self) {
 		},
 		restart_camera: {
 			name: 'Restart Camera',
-			options: [],
-			callback: () => self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 }),
+			options: [{ type: 'checkbox', label: 'Confirm Restart (must be checked to proceed)', id: 'confirm', default: false }],
+			callback: async (action) => {
+				if (action.options.confirm) {
+					self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 })
+					self.log('info', 'Restart command sent to camera')
+				} else {
+					self.log('warn', 'Restart not confirmed — checkbox must be enabled')
+				}
+			},
 		},
 		send_command: {
 			name: 'Send Generic Command',

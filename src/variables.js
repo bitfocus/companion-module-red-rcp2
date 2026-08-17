@@ -92,7 +92,10 @@ export function getVariableDefinitions() {
 		{ variableId: 'cal_status_temp',           name: 'Calibration Status Temperature' },
 		{ variableId: 'cal_current_temp',          name: 'Current Calibration Temperature' },
 		// Display tools extras
-		{ variableId: 'magnify_dsi1',              name: 'Magnify Enable DSI 1' },
+		{ variableId: 'magnify_sdi1',              name: 'Magnify Enabled SDI 1 (On/Off)' },
+		{ variableId: 'magnify_sdi2',              name: 'Magnify Enabled SDI 2 (On/Off)' },
+		{ variableId: 'magnify_dsi1',              name: 'Magnify Enabled Top LCD / DSI 1 (On/Off)' },
+		{ variableId: 'magnify_lcd',               name: 'Magnify Enabled Built-in LCD (On/Off)' },
 		{ variableId: 'sdi2_freq',                 name: 'SDI 2 Output Frequency' },
 		{ variableId: 'frame_guide_color',         name: 'Frame Guide 1 Color' },
 		{ variableId: 'power_type',                name: 'Power Input Type' },

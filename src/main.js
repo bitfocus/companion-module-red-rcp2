@@ -9,11 +9,16 @@ import { getActionDefinitions } from './actions.js'
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Verified against the camera's own RCP_PARAM_RECORD_FORMAT dropdown (see issue #24):
+// _FF protocol symbols are RED's native 17:9 crop, not 16:9; 4K 16:9 UHD is value 18.
 const recordFormatMappingAll = {
-	0: '6K 16:9',    1: '5K 16:9',    2: '4K 16:9',    3: '6K 16:9',
-	4: '2K 16:9',    5: '6K 2.39:1',  6: '8K 16:9',    7: '8K 16:9',
-	8: '8K 21:9',    9: '8K 2.39:1',  10: '7K 16:9',   11: '7K 16:9',
-	12: '7K 21:9',   13: '7K 2.39:1', 14: '6K 21:9',
+	0: '6K 17:9',    1: '5K 17:9',    2: '4K 17:9',    3: '6K 16:9',
+	4: '2K 17:9',    5: '6K 2.4:1',   6: '8K 17:9',    7: '8K 16:9',
+	8: '8K 2:1',     9: '8K 2.4:1',   10: '7K 17:9',   11: '7K 16:9',
+	12: '7K 2:1',    13: '7K 2.4:1',  14: '6K 2:1',    18: '4K 16:9',
+	42: '6K 16:9 1.5x',  43: '6K 17:9 1.3x',  45: '6K 17:9 1.25x',
+	55: '6K 4:3 2x',     56: '6K 6:5 2x',     57: '6K 3:2 1.8x',
+	58: '6K 4:3 1.8x',   59: '6K 3:2 1.6x',
 }
 
 const recordCodecMapping = { 0: 'R3D', 1: 'ProRes' }
@@ -154,6 +159,7 @@ class RedRCP2Instance extends InstanceBase {
 		this.currentExposureAdjust = 0
 		this.lutSdi1Enabled = false
 		this.lutSdi2Enabled = false
+		this.magnifyState = {}  // keyed by MAGNIFY_ENABLE_* param id → boolean
 		this.cameraTypeNum  = 0  // 50=KOMODO, 51=V-RAPTOR, 52=V-RAPTOR XL, 53=KOMODO-X
 		this.pollOnlyParams = null  // non-subscribed params to poll at heartbeat
 		this._staggerTimers = new Set()
@@ -212,7 +218,8 @@ class RedRCP2Instance extends InstanceBase {
 			// Calibration
 			cal_status_temp: '', cal_current_temp: '',
 			// Display extras
-			magnify_dsi1: '', sdi2_freq: '', frame_guide_color: '', power_type: '',
+			magnify_dsi1: '', magnify_sdi1: '', magnify_sdi2: '', magnify_lcd: '',
+			sdi2_freq: '', frame_guide_color: '', power_type: '',
 			// Display tools
 			log_view: '', false_color: '', peaking: '',
 		}
@@ -457,7 +464,8 @@ class RedRCP2Instance extends InstanceBase {
 			'COLOR_TEMPERATURE', 'EXPOSURE_ADJUST', 'EXPOSURE_DISPLAY', 'EXPOSURE_INTEGRATION_TIME',
 			'EXTERNAL_TALLY_1_COLOR', 'EXTERNAL_TALLY_2_COLOR', 'EXTERNAL_TALLY_3_COLOR', 'EXTERNAL_TALLY_OPACITY',
 			'EXTERNAL_TALLY_STATE', 'EXTERNAL_TALLY_STYLE', 'EXTERNAL_TALLY_THICKNESS', 'FALSE_COLOR_ENABLE', 'ISO',
-			'LOG_VIEW_ENABLE', 'MEDIA_PERCENTAGE_REMAINING', 'MEDIA_TIME_REMAINING', 'ND',
+			'LOG_VIEW_ENABLE', 'MAGNIFY_ENABLE_BUILT_IN_LCD', 'MAGNIFY_ENABLE_DSI_1', 'MAGNIFY_ENABLE_SDI_1',
+			'MAGNIFY_ENABLE_SDI_2', 'MEDIA_PERCENTAGE_REMAINING', 'MEDIA_TIME_REMAINING', 'ND',
 			'PEAKING_ENABLE', 'RECORD_CODEC', 'RECORD_FORMAT', 'RECORD_FORMAT_RECT_SDI_1',
 			'RECORD_FORMAT_RECT_SDI_2', 'RECORD_MODE', 'RECORD_STATE', 'ROLL_OFF',
 			'SENSOR_FRAME_RATE', 'SHUTTER_DISPLAY_MODE',
@@ -1052,11 +1060,25 @@ class RedRCP2Instance extends InstanceBase {
 					? msg.display.str : (msg.cur && msg.cur.val !== undefined ? String(msg.cur.val) : '')
 				break
 
-			// Display extras
+			// Display extras — magnify is per-output (issue #16)
+			case 'MAGNIFY_ENABLE_BUILT_IN_LCD':
 			case 'MAGNIFY_ENABLE_DSI_1':
-				this.variables.magnify_dsi1 = (msg.cur && typeof msg.cur.val === 'number')
-					? (msg.cur.val ? 'On' : 'Off') : ((msg.display && msg.display.str) ? msg.display.str : '')
+			case 'MAGNIFY_ENABLE_SDI_1':
+			case 'MAGNIFY_ENABLE_SDI_2': {
+				const magnifyVarMap = {
+					MAGNIFY_ENABLE_BUILT_IN_LCD: 'magnify_lcd',
+					MAGNIFY_ENABLE_DSI_1: 'magnify_dsi1',
+					MAGNIFY_ENABLE_SDI_1: 'magnify_sdi1',
+					MAGNIFY_ENABLE_SDI_2: 'magnify_sdi2',
+				}
+				const on = (msg.cur && typeof msg.cur.val === 'number')
+					? msg.cur.val === 1
+					: !!(msg.display && msg.display.str && (msg.display.str.toLowerCase() === 'on' || msg.display.str === '1'))
+				this.magnifyState[msg.id] = on
+				this.variables[magnifyVarMap[msg.id]] = on ? 'On' : 'Off'
+				if (typeof this.checkFeedbacks === 'function') this.checkFeedbacks('magnify_active')
 				break
+			}
 
 			case 'MONITOR_FREQUENCY_SDI_2':
 				this.variables.sdi2_freq = (msg.display && msg.display.str)

@@ -6,7 +6,17 @@ Type in the IP address of the RED camera. Works with all DSMC3 cameras (V-RAPTOR
 
 ---
 
-### v1.4.8 — What's New
+### v1.5.0 — What's New
+
+**Record Format labels corrected (issue #24):** The Set Record Format dropdown previously mislabeled RED's native 17:9 formats as 16:9 — selecting "4K 16:9" actually put the camera in 4K 17:9 (4096×2160 DCI). All labels now match the camera's own menu: the 17:9 crops are labeled 17:9, true 4K 16:9 UHD (3840×2160, value 18) has been added, and the missing 6K anamorphic modes (4:3 2x, 6:5 2x, 3:2 1.8x, 4:3 1.8x, 3:2 1.6x, 16:9 1.5x, 17:9 1.3x, 17:9 1.25x) are now available. The `$(NAME:record_format)` variable reports the corrected names too. Existing buttons keep sending the same values they always did — on-camera behavior is unchanged, the labels are now just accurate. If you picked "4K 16:9" wanting true UHD, re-select the new **4K 16:9** entry.
+
+**Magnify control (issue #16):** New **Set Magnify** action with Enable / Disable / Toggle on one or more outputs at once (SDI 1, SDI 2, Top LCD, Built-in LCD — multi-select design from @ChristopherJohnson2's PR #20), a **Magnify Active** feedback for button styling, and live per-output status variables. Output availability depends on camera model — outputs your camera doesn't have simply ignore the command.
+
+**Shutdown fixed, Restart added (@ChristopherJohnson2, PRs #18/#19):** The Shutdown Camera action was sending `SHUTDOWN` value 1, which *restarts* the camera per RED's RCP2 documentation — it now sends value 2, a true power-off. A separate **Restart Camera** action provides the old behavior under an honest name. Both require their confirmation checkbox before firing.
+
+---
+
+### v1.4.8
 
 Maintenance release addressing Bitfocus code review feedback. No new features — all changes are internal.
 
@@ -94,6 +104,9 @@ These changes keep CPU load flat and avoid large spikes during connect or heartb
 - Enable LUT on SDI 1 / SDI 2
 - Disable LUT on SDI 1 / SDI 2
 
+#### Display Tools
+- Set Magnify (Enable / Disable / Toggle on one or more outputs: SDI 1, SDI 2, Top LCD, Built-in LCD)
+
 #### Tally Control
 - Set External Monitor Tally State (Off / Tally 1 / 2 / 3)
 - Enable / Disable / Toggle Camera Body Tally LED
@@ -103,7 +116,8 @@ These changes keep CPU load flat and avoid large spikes during connect or heartb
 - Set Tally Thickness (Small / Medium / Large)
 
 #### System
-- Shutdown Camera (requires confirmation checkbox)
+- Shutdown Camera (true power-off; requires confirmation checkbox)
+- Restart Camera (requires confirmation checkbox)
 - Send Generic Command (raw RCP2 JSON)
 
 The Send Generic Command action accepts any valid RCP2 JSON object. Example:
@@ -241,6 +255,10 @@ The Send Generic Command action accepts any valid RCP2 JSON object. Example:
 | `$(NAME:log_view)` | Log View Enabled |
 | `$(NAME:false_color)` | False Color Enabled |
 | `$(NAME:peaking)` | Peaking Enabled |
+| `$(NAME:magnify_sdi1)` | Magnify Enabled SDI 1 (On/Off) |
+| `$(NAME:magnify_sdi2)` | Magnify Enabled SDI 2 (On/Off) |
+| `$(NAME:magnify_dsi1)` | Magnify Enabled Top LCD / DSI 1 (On/Off) |
+| `$(NAME:magnify_lcd)` | Magnify Enabled Built-in LCD (On/Off) |
 
 #### Calibration
 | Variable | Description |
