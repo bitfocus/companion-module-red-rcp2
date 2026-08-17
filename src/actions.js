@@ -292,6 +292,11 @@ export function getActionDefinitions(self) {
 				}
 			},
 		},
+		restart_camera: {
+			name: 'Restart Camera',
+			options: [],
+			callback: () => self.send({ type: 'rcp_set', id: 'SHUTDOWN', value: 1 }),
+		},
 		send_command: {
 			name: 'Send Generic Command',
 			options: [{ type: 'textinput', label: 'Raw JSON Data', id: 'data', default: '{ "type": "rcp_set", "id": "ISO", "val": 800 }', useVariables: true }],
