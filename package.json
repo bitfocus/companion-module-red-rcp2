@@ -24,7 +24,7 @@
         "zx": "^8.8.5"
     },
     "devDependencies": {
-        "@companion-module/tools": "^2.6.1",
+        "@companion-module/tools": "^2.8.0",
         "eslint": "^9.36.0",
         "prettier": "*"
     },
